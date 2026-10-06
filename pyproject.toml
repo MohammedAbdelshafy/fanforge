@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "fanforge"
 version = "0.1.0"
 description = "Media-generation orchestration pipeline: brief to queued jobs to gallery, with pluggable backends and a deterministic mock."
+authors = [{name = "Mohammed Abdelshafy"}]
+readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 
