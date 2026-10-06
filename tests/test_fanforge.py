@@ -113,7 +113,7 @@ class MockRunTests(unittest.TestCase):
         queue_jobs(SAMPLE_BRIEF, job_dir)
         return job_dir
 
-    def test_mock_run_produces_three_real_assets(self):
+    def test_mock_run_produces_three_placeholder_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
             job_dir = self._queued_dir(tmp)
             done, failed = run_queued_jobs(job_dir, MockBackend())
@@ -225,6 +225,188 @@ class CliTests(unittest.TestCase):
             self.assertEqual(
                 main(["queue", "--brief", str(brief_path), "--out", str(Path(tmp) / "j")]), 2
             )
+
+
+class AssetPathTests(unittest.TestCase):
+    """Backend-returned asset paths: absolute vs relative vs outside the dir."""
+
+    def _queued_dir(self, tmp):
+        job_dir = Path(tmp) / "job1"
+        queue_jobs(SAMPLE_BRIEF, job_dir)
+        return job_dir
+
+    def test_relative_asset_path_is_accepted(self):
+        # base.py documents: generate() may return an absolute path OR one
+        # relative to the job dir. A relative return must not fail the job.
+        from fanforge.backends.base import GeneratorBackend
+
+        class RelativeBackend(GeneratorBackend):
+            name = "relative"
+
+            def generate(self, job, assets_dir):
+                target = Path(assets_dir) / f"{job['job_id']}.txt"
+                target.write_text("placeholder", encoding="utf-8")
+                return str(Path("assets") / target.name)  # relative to job dir
+
+        with tempfile.TemporaryDirectory() as tmp:
+            job_dir = self._queued_dir(tmp)
+            done, failed = run_queued_jobs(job_dir, RelativeBackend())
+            self.assertEqual((done, failed), (3, 0))
+            for job in load_jobs(job_dir):
+                self.assertEqual(job["status"], "done")
+                self.assertTrue((job_dir / job["asset"]).exists())
+
+    def test_asset_outside_job_dir_fails_job_with_clear_error(self):
+        from fanforge.backends.base import GeneratorBackend
+
+        class OutsideBackend(GeneratorBackend):
+            name = "outside"
+
+            def generate(self, job, assets_dir):
+                return "/definitely/not/the/job/dir/asset.svg"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            job_dir = self._queued_dir(tmp)
+            done, failed = run_queued_jobs(job_dir, OutsideBackend())
+            self.assertEqual((done, failed), (0, 3))
+            for job in load_jobs(job_dir):
+                self.assertEqual(job["status"], "failed")
+                self.assertIsNone(job["asset"])
+                self.assertIn("outside the job dir", job["error"])
+
+
+class LoadJobsValidationTests(unittest.TestCase):
+    def _write_jsonl(self, tmp, lines):
+        job_dir = Path(tmp) / "job1"
+        job_dir.mkdir()
+        (job_dir / "jobs.jsonl").write_text(
+            "\n".join(lines) + "\n", encoding="utf-8"
+        )
+        return job_dir
+
+    def _good_job(self):
+        return {
+            "job_id": "job-001-x",
+            "item_id": "a",
+            "prompt": "p",
+            "kind": "image",
+            "status": "queued",
+        }
+
+    def test_missing_keys_rejected_with_line_number(self):
+        import json as json_mod
+
+        job = self._good_job()
+        del job["status"]
+        with tempfile.TemporaryDirectory() as tmp:
+            job_dir = self._write_jsonl(tmp, [json_mod.dumps(job)])
+            with self.assertRaises(ValueError) as ctx:
+                load_jobs(job_dir)
+            self.assertIn("line 1", str(ctx.exception))
+            self.assertIn("status", str(ctx.exception))
+
+    def test_non_object_line_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            job_dir = self._write_jsonl(tmp, ["[1, 2, 3]"])
+            with self.assertRaises(ValueError) as ctx:
+                load_jobs(job_dir)
+            self.assertIn("line 1", str(ctx.exception))
+
+    def test_unknown_status_rejected(self):
+        import json as json_mod
+
+        job = self._good_job()
+        job["status"] = "banana"
+        with tempfile.TemporaryDirectory() as tmp:
+            job_dir = self._write_jsonl(tmp, [json_mod.dumps(job)])
+            with self.assertRaises(ValueError) as ctx:
+                load_jobs(job_dir)
+            self.assertIn("banana", str(ctx.exception))
+
+    def test_valid_queue_still_loads(self):
+        import json as json_mod
+
+        with tempfile.TemporaryDirectory() as tmp:
+            job_dir = self._write_jsonl(tmp, [json_mod.dumps(self._good_job())])
+            jobs = load_jobs(job_dir)
+            self.assertEqual(len(jobs), 1)
+
+
+class SaveJobsAtomicTests(unittest.TestCase):
+    def test_no_tmp_files_left_after_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            job_dir = Path(tmp) / "job1"
+            queue_jobs(SAMPLE_BRIEF, job_dir)
+            run_queued_jobs(job_dir, MockBackend())
+            self.assertEqual(list(job_dir.glob("*.tmp")), [])
+
+
+class CliEdgeCaseTests(unittest.TestCase):
+    def test_cli_queue_out_is_existing_file_errors_cleanly(self):
+        from fanforge.cli import main
+        import io
+        from contextlib import redirect_stderr
+
+        with tempfile.TemporaryDirectory() as tmp:
+            brief_path = write_brief(tmp, SAMPLE_BRIEF)
+            blocker = Path(tmp) / "blocker"
+            blocker.write_text("i am a file, not a dir", encoding="utf-8")
+            err = io.StringIO()
+            with redirect_stderr(err):
+                code = main(
+                    ["queue", "--brief", str(brief_path), "--out", str(blocker)]
+                )
+            self.assertEqual(code, 2)
+            self.assertIn("error:", err.getvalue())
+
+    def test_cli_requeue_warns_about_overwrite(self):
+        from fanforge.cli import main
+        import io
+        from contextlib import redirect_stderr
+
+        with tempfile.TemporaryDirectory() as tmp:
+            brief_path = write_brief(tmp, SAMPLE_BRIEF)
+            job_dir = str(Path(tmp) / "job1")
+            self.assertEqual(
+                main(["queue", "--brief", str(brief_path), "--out", job_dir]), 0
+            )
+            err = io.StringIO()
+            with redirect_stderr(err):
+                self.assertEqual(
+                    main(["queue", "--brief", str(brief_path), "--out", job_dir]), 0
+                )
+            self.assertIn("overwriting 3 existing job(s)", err.getvalue())
+
+    def test_cli_run_mock_labels_output_as_placeholder(self):
+        from fanforge.cli import main
+        import io
+        from contextlib import redirect_stdout, redirect_stderr
+
+        with tempfile.TemporaryDirectory() as tmp:
+            brief_path = write_brief(tmp, SAMPLE_BRIEF)
+            job_dir = str(Path(tmp) / "job1")
+            self.assertEqual(
+                main(["queue", "--brief", str(brief_path), "--out", job_dir]), 0
+            )
+            out, err = io.StringIO(), io.StringIO()
+            with redirect_stdout(out), redirect_stderr(err):
+                code = main(["run", "--dir", job_dir, "--backend", "mock"])
+            self.assertEqual(code, 0)
+            combined = out.getvalue() + err.getvalue()
+            self.assertIn("mock", combined)
+            self.assertIn("NOT AI-generated", combined)
+
+    def test_cli_gallery_missing_queue_errors_cleanly(self):
+        from fanforge.cli import main
+        import io
+        from contextlib import redirect_stderr
+
+        with tempfile.TemporaryDirectory() as tmp:
+            err = io.StringIO()
+            with redirect_stderr(err):
+                code = main(["gallery", "--dir", str(Path(tmp) / "nope")])
+            self.assertEqual(code, 2)
+            self.assertIn("error:", err.getvalue())
 
 
 if __name__ == "__main__":

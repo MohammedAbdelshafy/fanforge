@@ -32,6 +32,9 @@ class GeneratorBackend:
 
     name = "base"
     description = "base backend interface (not usable directly)"
+    # Set to True by backends whose output is placeholder/synthetic rather
+    # than real generated media, so the CLI can label it honestly.
+    mock_output = False
 
     def generate(self, job, assets_dir):
         """Generate the asset for *job* into *assets_dir*.

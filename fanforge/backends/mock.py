@@ -88,6 +88,7 @@ class MockBackend(GeneratorBackend):
 
     name = "mock"
     description = "deterministic mock: SVG placeholder assets (NOT AI-generated)"
+    mock_output = True
 
     def generate(self, job, assets_dir):
         assets_dir = Path(assets_dir)

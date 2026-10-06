@@ -31,6 +31,11 @@ STATUS_RUNNING = "running"
 STATUS_DONE = "done"
 STATUS_FAILED = "failed"
 
+KNOWN_STATUSES = (STATUS_QUEUED, STATUS_RUNNING, STATUS_DONE, STATUS_FAILED)
+
+# A job dict must at least carry these keys for run/gallery to work.
+REQUIRED_JOB_KEYS = ("job_id", "item_id", "prompt", "kind", "status")
+
 
 def _now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -74,7 +79,12 @@ def queue_jobs(brief, out_dir):
 
 
 def load_jobs(job_dir):
-    """Load the job queue from <job_dir>/jobs.jsonl."""
+    """Load the job queue from <job_dir>/jobs.jsonl.
+
+    Raises FileNotFoundError when there is no queue, ValueError when a line
+    is not valid JSON or a job is missing required keys / has an unknown
+    status (e.g. a hand-edited or truncated file).
+    """
     path = Path(job_dir) / JOBS_FILE
     if not path.exists():
         raise FileNotFoundError(f"no job queue found at {path} (run 'fanforge queue' first)")
@@ -85,18 +95,59 @@ def load_jobs(job_dir):
             if not line:
                 continue
             try:
-                jobs.append(json.loads(line))
+                job = json.loads(line)
             except json.JSONDecodeError as exc:
                 raise ValueError(f"corrupt jobs.jsonl line {line_no}: {exc}") from exc
+            if not isinstance(job, dict):
+                raise ValueError(
+                    f"corrupt jobs.jsonl line {line_no}: expected a JSON object"
+                )
+            missing = [key for key in REQUIRED_JOB_KEYS if key not in job]
+            if missing:
+                raise ValueError(
+                    f"corrupt jobs.jsonl line {line_no}: "
+                    f"missing keys: {', '.join(missing)}"
+                )
+            if job["status"] not in KNOWN_STATUSES:
+                raise ValueError(
+                    f"corrupt jobs.jsonl line {line_no}: "
+                    f"unknown status {job['status']!r}; "
+                    f"must be one of: {', '.join(KNOWN_STATUSES)}"
+                )
+            jobs.append(job)
     return jobs
 
 
 def save_jobs(job_dir, jobs):
-    """Persist the job queue (one job per line)."""
+    """Persist the job queue (one job per line), atomically.
+
+    Writes to a temp file and renames it into place so an interrupted run
+    never leaves a half-written jobs.jsonl behind.
+    """
     path = Path(job_dir) / JOBS_FILE
-    with path.open("w", encoding="utf-8") as handle:
+    tmp_path = path.with_name(JOBS_FILE + ".tmp")
+    with tmp_path.open("w", encoding="utf-8") as handle:
         for job in jobs:
             handle.write(json.dumps(job, ensure_ascii=False) + "\n")
+    tmp_path.replace(path)
+
+
+def _resolve_asset_path(asset_path, job_dir):
+    """Resolve a backend-returned asset path to be relative to *job_dir*.
+
+    Backends may return an absolute path or a path relative to the job dir
+    (see backends/base.py). Raises ValueError with a clear message when the
+    asset lies outside the job directory, so gallery links stay valid.
+    """
+    path = Path(asset_path)
+    if not path.is_absolute():
+        path = job_dir / path
+    try:
+        return str(path.relative_to(job_dir))
+    except ValueError:
+        raise ValueError(
+            f"backend returned asset outside the job dir: {asset_path!r}"
+        ) from None
 
 
 def run_queued_jobs(job_dir, backend):
@@ -119,7 +170,7 @@ def run_queued_jobs(job_dir, backend):
         save_jobs(job_dir, jobs)
         try:
             asset_path = backend.generate(job, assets_dir)
-            job["asset"] = str(Path(asset_path).relative_to(job_dir))
+            job["asset"] = _resolve_asset_path(asset_path, job_dir)
             job["error"] = None
             job["status"] = STATUS_DONE
             job["finished_at"] = _now()

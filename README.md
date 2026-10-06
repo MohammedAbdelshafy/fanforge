@@ -30,6 +30,8 @@ fanforge queue --brief samples/brief.json --out ./job1/
 ```
 
 This writes `job1/jobs.jsonl` (one job per brief item, `status=queued`).
+Re-running `queue` on the same `--out` directory overwrites the existing
+queue (the CLI warns you on stderr when it does).
 
 A brief is a JSON object with `project` (non-empty string) and `items`
 (a non-empty list). Each item needs `id`, `prompt`, and `kind`

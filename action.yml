@@ -1,5 +1,5 @@
 name: 'FanForge'
-description: 'Run the media-generation pipeline in CI: queue jobs from a brief, execute them with the deterministic mock backend (placeholder SVGs, no API keys needed), and build an HTML gallery.'
+description: 'Run the media-generation pipeline in CI: queue jobs from a brief, execute them with the deterministic mock backend (placeholder SVGs, NOT AI-generated imagery, no API keys needed), and build a Markdown gallery (GALLERY.md).'
 author: 'Mohammed Abdelshafy'
 branding:
   icon: 'image'
