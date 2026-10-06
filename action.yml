@@ -1,0 +1,43 @@
+name: 'FanForge'
+description: 'Run the media-generation pipeline in CI: queue jobs from a brief, execute them with the deterministic mock backend (placeholder SVGs, no API keys needed), and build an HTML gallery.'
+author: 'Mohammed Abdelshafy'
+branding:
+  icon: 'image'
+  color: 'orange'
+inputs:
+  brief:
+    description: 'Path to the brief JSON file, relative to your repo root'
+    required: true
+  project:
+    description: 'Project name shown in the gallery header'
+    required: false
+    default: ''
+  out-dir:
+    description: 'Job directory to create, relative to your repo root'
+    required: false
+    default: './fanforge-job'
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout FanForge
+      uses: actions/checkout@v4
+      with:
+        repository: MohammedAbdelshafy/fanforge
+        path: _fanforge
+    - name: Queue jobs from brief
+      shell: bash
+      run: |
+        cd _fanforge
+        python3 -m fanforge queue --brief "${{ github.workspace }}/${{ inputs.brief }}" --out "${{ github.workspace }}/${{ inputs.out-dir }}"
+    - name: Run jobs with mock backend
+      shell: bash
+      run: |
+        cd _fanforge
+        python3 -m fanforge run --dir "${{ github.workspace }}/${{ inputs.out-dir }}" --backend mock
+    - name: Build gallery
+      shell: bash
+      run: |
+        cd _fanforge
+        args="--dir \"${{ github.workspace }}/${{ inputs.out-dir }}\""
+        if [ -n "${{ inputs.project }}" ]; then args="$args --project \"${{ inputs.project }}\""; fi
+        python3 -m fanforge gallery $args
