@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fanforge"
+version = "0.1.0"
+description = "Media-generation orchestration pipeline: brief to queued jobs to gallery, with pluggable backends and a deterministic mock."
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+[project.scripts]
+fanforge = "fanforge.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fanforge*"]

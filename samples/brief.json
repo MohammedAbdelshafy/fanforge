@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "aspect": "16:9",
+      "id": "sample-hero-image",
+      "kind": "image",
+      "notes": "Sample item 1 of 3 — replace with your own brief items.",
+      "prompt": "SAMPLE: a mountain sunrise with bold geometric shapes, poster style"
+    },
+    {
+      "aspect": "9:16",
+      "id": "sample-avatar-video",
+      "kind": "video",
+      "notes": "Sample item 2 of 3 — the mock backend emits a placeholder poster.",
+      "prompt": "SAMPLE: storyboard concept for a 15-second creator intro clip"
+    },
+    {
+      "id": "sample-voice-audio",
+      "kind": "audio",
+      "notes": "Sample item 3 of 3 — the mock backend emits a placeholder card.",
+      "prompt": "SAMPLE: concept for a 30-second voiceover intro"
+    }
+  ],
+  "project": "fanforge-sample-launch"
+}
