@@ -2,29 +2,29 @@
 type: repository
 status: active
 owner_repo: MohammedAbdelshafy/fanforge
-product_name: Creative Asset Queue
+product_name: Asset Queue & Gallery
 source_of_truth: https://github.com/MohammedAbdelshafy/fanforge
 ---
 
-# Creative Asset Queue CONTEXT
+# Asset Queue & Gallery CONTEXT
 
-One job: turn a brief into a queue of media tasks and a gallery of outputs from the selected backend.
+One job: turn an asset brief into a queue, run jobs through a configured backend, and create a gallery of results.
 
 ## Inputs
-- Commands and backend limits: [README](README.md)
+- Usage: [README](README.md)
 - Implementation: [fanforge](fanforge/)
 - Tests: [tests](tests/)
-- Samples: [samples](samples/)
+- Example brief: [samples](samples/)
 
 ## Process
-1. Validate a brief and expand it into queued tasks.
-2. Run queued items through the selected backend.
-3. Record status and create a gallery of outputs.
-4. Clearly label mock assets; never describe placeholders as generated images or videos.
-5. Review the backend, provider cost and commercial rights before accepting client work.
+1. Validate the brief and create job records.
+2. Execute queued jobs through the selected backend.
+3. Track each result as done or failed.
+4. Build a gallery that shows each item's status and output location.
+5. Keep mock output clearly labeled as a placeholder.
 
 ## Output
-A task queue and a gallery with task status and asset paths.
+A queue file, generated assets from the configured backend, and a gallery index.
 
 ## Check
-Run the tests and bundled mock sample. Verify re-running a queue does not silently overwrite important output. Do not call the project a live generation service unless a real backend is installed and tested.
+Run the tests and a sample run using the mock backend. Do not describe placeholders as generated imagery or promise external model output until a real backend is verified.
