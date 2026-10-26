@@ -1,4 +1,4 @@
-# Creator Asset Queue
+# FanForge
 
 A small tool for turning an asset brief into queued jobs, running those jobs through a selected backend, and making a gallery of the results. Its built-in mock backend creates labeled placeholder files for testing; it does not create real AI images.
 Real generation depends on a configured backend. A queued job or mock gallery is not a finished customer deliverable.
