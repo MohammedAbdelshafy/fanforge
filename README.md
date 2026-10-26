@@ -1,7 +1,7 @@
 # Creator Asset Queue
 
-A small tool for turning a creative brief into queued image, video or audio jobs, running those jobs through a chosen backend, and creating a gallery of the resulting files.
-The built-in mock backend creates clearly labelled placeholder SVGs. Real media generation requires a separately configured backend and valid provider access.
+A small tool for turning an asset brief into queued jobs, running those jobs through a selected backend, and making a gallery of the results. Its built-in mock backend creates labeled placeholder files for testing; it does not create real AI images.
+Real generation depends on a configured backend. A queued job or mock gallery is not a finished customer deliverable.
 
 ## Install
 
