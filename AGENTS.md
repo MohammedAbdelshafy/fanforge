@@ -1,8 +1,8 @@
-# Creative Asset Queue
+# Asset Queue & Gallery
 
-- Overview: [README.md](README.md)
-- Source: [fanforge](fanforge/)
+- Commands and backend behavior: [README.md](README.md)
+- Implementation: [fanforge](fanforge/)
 - Tests: [tests](tests/)
 - Project contract: [CONTEXT.md](CONTEXT.md)
 
-The built-in mock backend generates placeholder SVGs for testing only. Keep that limitation visible in product copy.
+Keep mock output labeled as mock. Preserve `fanforge` package and command names, and describe features according to the backend actually configured.
