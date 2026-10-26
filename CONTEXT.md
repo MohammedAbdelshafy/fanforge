@@ -2,11 +2,11 @@
 type: repository
 status: active
 owner_repo: MohammedAbdelshafy/fanforge
-product_name: Creator Asset Queue
+product_name: FanForge
 source_of_truth: https://github.com/MohammedAbdelshafy/fanforge
 ---
 
-# Creator Asset Queue CONTEXT
+# FanForge CONTEXT
 
 One job: organize asset requests into jobs, run them through a chosen backend and create a review gallery.
 

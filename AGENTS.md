@@ -1,4 +1,4 @@
-# Creator Asset Queue
+# FanForge
 
 - Commands and backend behavior: [README.md](README.md)
 - Implementation: [fanforge](fanforge/)
