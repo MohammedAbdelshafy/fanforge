@@ -1,6 +1,7 @@
-# Creative Asset Queue
+# Asset Queue & Gallery
 
-A small command-line tool for turning an asset brief into queued jobs and a gallery. You connect the image/video/audio generator you want to use. The built-in mock backend creates placeholder SVG files for testing; those placeholders are labeled and are not generated media.
+A small Python tool that turns a brief into a queue of asset jobs, runs them through a selected backend, and builds a gallery. Its built-in mock backend produces placeholder SVGs for testing; it does not create real AI images.
+The current mock output is for testing only. Real image/video/audio generation requires a separate backend that is configured, permitted and tested.
 
 ## Install
 
