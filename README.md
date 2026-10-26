@@ -1,13 +1,6 @@
-# FanForge
+# Creative Asset Queue
 
-Media-generation **orchestration pipeline**: turn a brief into queued generation
-jobs, execute them through a pluggable backend, and emit an asset gallery.
-
-FanForge does not generate imagery by itself. It is the wiring between your
-brief, whatever generator you plug in, and the finished gallery. The built-in
-`mock` backend produces deterministic placeholder SVGs so the pipeline can be
-run end-to-end without API keys; mock output is labeled as mock and is **not**
-AI-generated imagery.
+A small command-line tool for turning an asset brief into queued jobs and a gallery. You connect the image/video/audio generator you want to use. The built-in mock backend creates placeholder SVG files for testing; those placeholders are labeled and are not generated media.
 
 ## Install
 
